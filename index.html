@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Access</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --main-bg: #0a0a0a;
+            --text-color: #00ff41;
+            --glow-color: rgba(0, 255, 65, 0.75);
+            --border-color: #00ff41;
+        }
+
+        body {
+            background-color: var(--main-bg);
+            color: var(--text-color);
+            font-family: 'VT323', monospace;
+            font-size: 18px;
+            line-height: 1.5;
+            cursor: none;
+            overflow: hidden;
+        }
+
+        .scanlines::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(
+                to bottom,
+                rgba(0, 0, 0, 0) 50%,
+                rgba(0, 0, 0, 0.25) 50%
+            );
+            background-size: 100% 4px;
+            z-index: 2;
+            pointer-events: none;
+            animation: scan 10s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 100px; }
+        }
+
+        .container {
+            padding: 2rem;
+            max-width: 900px;
+            margin: auto;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 0 20px var(--glow-color);
+            animation: flicker 0.15s infinite alternate;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.9; }
+            50% { opacity: 1; }
+            100% { opacity: 0.95; }
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            text-shadow: 0 0 10px var(--glow-color);
+            margin-bottom: 2rem;
+        }
+
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 2rem 0;
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+        }
+
+        nav a {
+            color: var(--text-color);
+            text-decoration: none;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            padding: 2px 5px;
+        }
+
+        nav a:hover, nav a.active {
+            text-shadow: 0 0 15px var(--glow-color);
+            background-color: var(--text-color);
+            color: var(--main-bg);
+        }
+
+        .content-box {
+            border: 1px dashed var(--border-color);
+            padding: 1.5rem;
+            min-height: 300px;
+        }
+
+        #typing-text, .typing-target {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.2em;
+            background-color: var(--text-color);
+            animation: blink 1s step-end infinite;
+            box-shadow: 0 0 5px var(--glow-color);
+        }
+
+        @keyframes blink {
+            from, to { background-color: transparent; }
+            50% { background-color: var(--text-color); }
+        }
+
+        footer {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        .custom-cursor {
+            position: fixed;
+            width: 20px;
+            height: 20px;
+            border: 1px solid var(--text-color);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            box-shadow: 0 0 10px var(--glow-color);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Form Styling */
+        .content-box form {
+            margin-top: 1rem;
+        }
+        .content-box label {
+            display: inline-block;
+            width: 100px;
+        }
+        .content-box input[type="text"],
+        .content-box input[type="password"] {
+            background-color: #1a1a1a;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            font-family: 'VT323', monospace;
+            font-size: 1em;
+            padding: 5px;
+            width: 250px;
+            margin-bottom: 10px;
+        }
+        .content-box input:focus {
+            outline: none;
+            box-shadow: 0 0 10px var(--glow-color);
+        }
+        .content-box button {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            font-family: 'VT323', monospace;
+            font-size: 1em;
+            padding: 5px 10px;
+            cursor: none;
+            text-transform: uppercase;
+            margin-top: 10px;
+        }
+        .content-box button:hover {
+            background-color: var(--text-color);
+            color: var(--main-bg);
+        }
+        
+        #datetime-display {
+            text-align: center;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 5px var(--glow-color);
+        }
+        
+        .flag-ps {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 50px;
+            height: 30px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 0 10px var(--glow-color);
+        }
+
+        .flag-bd {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 30px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 0 10px var(--glow-color);
+        }
+        .image-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 0 10px var(--glow-color);
+        }
+    </style>
+</head>
+<body class="scanlines">
+
+    <img src="https://cdn.dribbble.com/userupload/22123384/file/original-0b0c0c4aae6f44243b94a468af3cda7f.gif" alt="Palestine flag with wave effect" class="flag-ps">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/2/29/Animated_Flag_of_Bangladesh.gif" alt="Animated Flag of Bangladesh" class="flag-bd">
+
+    <div class="custom-cursor"></div>
+
+    <div class="container">
+        <h1>Jeya Dark Wab</h1>
+        
+        <div id="datetime-display"></div>
+        <nav>
+            <ul>
+                <li><a href="#" class="nav-link active" data-target="home">[Home]</a></li>
+                <li><a href="#" class="nav-link" data-target="login">[Login]</a></li>
+                <li><a href="#" class="nav-link" data-target="forum">[Forum]</a></li>
+                <li><a href="#" class="nav-link" data-target="archive">[Archive]</a></li>
+                <li><a href="#" class="nav-link" data-target="hacking">[Hacking websites]</a></li>
+                <li><a href="#" class="nav-link" data-target="about">[About]</a></li>
+            </ul>
+        </nav>
+
+        <div class="content-box">
+            <!-- Home Content -->
+            <div id="home" class="content-section">
+                <p>> Initializing system...</p>
+                <p>> Encrypted connection established.</p>
+                <p>> Welcome, User #8A5C2D</p>
+                <br>
+                <p>> Loading today's message...</p>
+                <span class="typing-target"></span><span class="cursor"></span>
+                <div id="home-image-section" class="image-container hidden">
+                    <p>> Visualizing network activity...</p>
+                    <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3MzExNmNwa3FjaTB6OXdwdmJrcml1c2lpa292dHF2dmwxeTdyNGxpcTFubCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/L2g0kM7Q79E89k3D1m/giphy.gif" alt="Animated network visualization">
+                </div>
+            </div>
+            
+            <!-- Login Content -->
+            <div id="login" class="content-section hidden">
+                <p>> Access Control</p>
+                <p>> Authentication required. Provide your credentials.</p>
+                <br>
+                <form onsubmit="return false;">
+                    <div>
+                        <label for="user">Username:</label>
+                        <input type="text" id="user" name="user" autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="pass">Password:</label>
+                        <input type="password" id="pass" name="pass">
+                    </div>
+                    <button type="submit">[Authenticate]</button>
+                </form>
+            </div>
+
+            <!-- Forum Content -->
+            <div id="forum" class="content-section hidden">
+                <p>> Accessing secure forum channels...</p>
+                <br>
+                <div class="typing-target"></div><span class="cursor"></span>
+            </div>
+
+            <!-- Archive Content -->
+            <div id="archive" class="content-section hidden">
+                <p>> Accessing encrypted data archives...</p>
+                <br>
+                <div class="typing-target"></div><span class="cursor"></span>
+            </div>
+
+            <!-- Hacking websites Content -->
+            <div id="hacking" class="content-section hidden">
+                <p>> Loading ethical hacking tools info...</p>
+                <br>
+                <div class="typing-target"></div><span class="cursor"></span>
+            </div>
+            
+            <!-- New 'About' Page Content -->
+            <div id="about" class="content-section hidden">
+                <p>> About Jeya Dark Wab</p>
+                <br>
+                <p>> This is a secure terminal-themed website, designed for educational purposes and ethical cybersecurity discussions.</p>
+                <p>> The Jeya Network is a community of ethical hackers, security researchers, and technology enthusiasts.</p>
+                <br>
+                <div class="typing-target"></div><span class="cursor"></span>
+            </div>
+        </div>
+
+        <footer>
+            <p>&copy; 2025 Jeya Network. All connections are encrypted and monitored.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Custom cursor effect
+        const cursor = document.querySelector('.custom-cursor');
+        document.addEventListener('mousemove', e => {
+            cursor.setAttribute("style", "top: "+(e.pageY)+"px; left: "+(e.pageX)+"px;")
+        });
+
+        // Function to update the date and time display
+        function updateDateTime() {
+            const now = new Date();
+            const options = {
+                timeZone: 'Asia/Dhaka',
+                hour12: true,
+                hour: 'numeric',
+                minute: 'numeric',
+                second: 'numeric'
+            };
+            const timeString = now.toLocaleTimeString('en-US', options);
+
+            const dateOptions = {
+                timeZone: 'Asia/Dhaka',
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            };
+            const dateString = now.toLocaleDateString('en-US', dateOptions);
+
+            const displayElement = document.getElementById('datetime-display');
+            displayElement.textContent = `> ${dateString}, ${timeString}`;
+        }
+
+        // Content switching and typing logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const navLinks = document.querySelectorAll('nav .nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+            let typeTimeout; // To clear previous typing animations
+
+            const contentToType = {
+                'home': "Where shadows speak, truth hides. Remember, every click has an echo. Your identity is both your greatest asset and your greatest vulnerability. Tread carefully...",
+                'forum': `> [Thread 101] The Echo Chamber Protocol\n> [Thread 102] Ghost in the Machine: Bypassing Quantum Encryption\n> [Thread 103] Project Chimera: Asset Acquisition\n> [Thread 104] Market Pulse: Zero-Day Exploits`,
+                'archive': `> [File] hydra_toolkit.zip | Size: 78.3MB | Hash: a1b2c3d4...\n> [File] phantom_proxy_chain.conf | Size: 12KB | Hash: e5f6g7h8...\n> [File] red_ledger.dat | Size: 1.2GB | Access: Level 5 Clearance\n> [File] communication_log_7.txt | Size: 5.6MB | Encrypted`,
+                'hacking': `> WARNING: Unauthorized use of these tools can have serious legal consequences. It is highly recommended to use them for ethical and educational purposes only.\n>\n> Here are some types of ethical hacking tools:\n>\n> 1.  Network Scanners: Tools for discovering active hosts and services on a network.\n> 2.  Vulnerability Scanners: Software used to scan systems for security weaknesses.\n> 3.  Password Crackers: Tools used to test the strength of passwords by attempting to guess them.\n> 4.  Packet Sniffers: Programs used to capture and analyze data packets on a computer network.\n> 5.  Penetration Testing Frameworks: Platforms that contain a collection of tools for various security tests.`,
+                'about': `> Welcome to Jeya Dark Wab. This platform is a collaborative space for individuals interested in the ethical and educational aspects of cybersecurity. We aim to foster a community dedicated to knowledge sharing, skill development, and responsible digital citizenship.`
+            };
+
+            function type(targetElement, text) {
+                clearTimeout(typeTimeout);
+                if (!targetElement) return;
+                targetElement.innerHTML = '';
+                let index = 0;
+
+                function typeChar() {
+                    if (index < text.length) {
+                        targetElement.innerHTML += text.charAt(index);
+                        index++;
+                        typeTimeout = setTimeout(typeChar, 30 + Math.random() * 30);
+                    } else {
+                        // Show image section after typing is complete
+                        if (targetElement.id === 'home') {
+                            const imageSection = document.getElementById('home-image-section');
+                            if (imageSection) {
+                                imageSection.classList.remove('hidden');
+                            }
+                        }
+                    }
+                }
+                typeChar();
+            }
+
+            // Initial type call for home section
+            const initialTarget = document.querySelector('#home .typing-target');
+            if (initialTarget) {
+                type(initialTarget, contentToType['home']);
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+
+                    navLinks.forEach(nav => nav.classList.remove('active'));
+                    link.classList.add('active');
+
+                    const targetId = link.getAttribute('data-target');
+
+                    contentSections.forEach(section => {
+                        if (section.id === targetId) {
+                            section.classList.remove('hidden');
+                            const typingTarget = section.querySelector('.typing-target');
+                            if (typingTarget && contentToType[targetId]) {
+                                type(typingTarget, contentToType[targetId]);
+                            }
+                            // Hide image section when switching tabs
+                            const imageSection = document.getElementById('home-image-section');
+                            if (imageSection) {
+                                imageSection.classList.add('hidden');
+                            }
+                        } else {
+                            section.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+            
+            // Start the date and time display
+            updateDateTime();
+            setInterval(updateDateTime, 1000);
+        });
+    </script>
+
+</body>
+</html>
